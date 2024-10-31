@@ -12,8 +12,8 @@ def get_att_points(mol):
 
 ATOM_VOCAB = ['C', 'N', 'O', 'S', 'P', 'F', 'I', 'Cl','Br', '*']
 
-FRAG_VOCAB = open('/data/renhong/mol-attack/molecule_generation/dataset/motifs_91.txt', 'r').readlines()  # n=132
-SCAFFOLD_VOCAB = open('/data/renhong/mol-attack/molecule_generation/dataset/ring_84.txt', 'r').readlines()
+FRAG_VOCAB = open('./molecule_generation/dataset/motifs_91.txt', 'r').readlines()  # n=132
+SCAFFOLD_VOCAB = open('./molecule_generation/dataset/ring_84.txt', 'r').readlines()
 SCAFFOLD_VOCAB = [s.strip('\n') for s in SCAFFOLD_VOCAB]
 
 FRAG_VOCAB = [s.strip('\n').split(',') for s in FRAG_VOCAB] 

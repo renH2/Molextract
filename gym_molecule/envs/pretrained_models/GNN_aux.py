@@ -15,7 +15,7 @@ import torch.optim as optim
 
 def calculate_extraction(records, scaffold_idx):
     scaffold_smi = SCAFFOLD_VOCAB[scaffold_idx]
-    core2id = pkl.load(open(r'/data/renhong/mol-attack/data_preprocessing/zinc/core2mol_bank/core2id.pkl', 'rb'))
+    core2id = pkl.load(open(r'./data_preprocessing/zinc/core2mol_bank/core2id.pkl', 'rb'))
     mol_bank_id = core2id[Chem.MolToSmiles(Molecule_Graph(scaffold_smi).mol_core)]
 
     att = Chem.MolFromSmiles('*')
@@ -23,7 +23,7 @@ def calculate_extraction(records, scaffold_idx):
 
     freq_list = []
     mol_bank_filtered = pkl.load(
-        open(f'/data/renhong/mol-attack/data_preprocessing/zinc/core2mol_bank/{mol_bank_id}.pkl', 'rb'))
+        open(f'./data_preprocessing/zinc/core2mol_bank/{mol_bank_id}.pkl', 'rb'))
     for i in range(len(records)):
         mg = records[i][0]
         mg1 = sanitize(Chem.ReplaceSubstructs(mg, att, H, replaceAll=True)[0])
@@ -113,41 +113,29 @@ class GNN_Aux(nn.Module):
         self.device = params['device']
         self.model = GNN_graphpred(5, 300, 1, JK='last', drop_ratio=0.5, graph_pooling='mean').to(self.device)
         if params['model'] == 'contextpred':
-            state = torch.load('/data/renhong/mol-hrh/saved/contextpred.pth')
+            state = torch.load('./saved/contextpred.pth')
             self.model.gnn.load_state_dict(state)
         elif params['model'] == 'gcl':
-            state = torch.load('/data/renhong/mol-hrh/saved/graphcl_80.pth',
+            state = torch.load('./saved/graphcl_80.pth',
                                map_location={'cuda:0': 'cuda:' + str(self.device.index)})
             self.model.gnn.load_state_dict(state)
         elif params['model'] == 'masking':
-            state = torch.load('/data/renhong/mol-hrh/saved/masking.pth')
+            state = torch.load('./saved/masking.pth')
             self.model.gnn.load_state_dict(state)
         elif params['model'] == 'infomax':
-            state = torch.load('/data/renhong/mol-hrh/saved/infomax.pth')
+            state = torch.load('./saved/infomax.pth')
             self.model.gnn.load_state_dict(state)
         elif params['model'] == 'mae':
-            state = torch.load('/data/renhong/mol-hrh/saved/pretrained.pth')
+            state = torch.load('./saved/pretrained.pth')
             self.model.gnn.load_state_dict(state)
         elif params['model'] == 'simgrace':
-            state = torch.load('/data/renhong/mol-hrh/saved/simgrace_100.pth')
+            state = torch.load('./saved/simgrace_100.pth')
             self.model.gnn.load_state_dict(state)
         elif params['model'] == 'molebert':
-            state = torch.load('/data/renhong/mol-hrh/saved/Mole-BERT.pth')
-            self.model.gnn.load_state_dict(state)
-        elif params['model'] == 'supercont':
-            state = torch.load('/data/renhong/mol-hrh/saved/supervised_contextpred.pth')
-            self.model.gnn.load_state_dict(state)
-        elif params['model'] == 'superedge':
-            state = torch.load('/data/renhong/mol-hrh/saved/supervised_edgepred.pth')
-            self.model.gnn.load_state_dict(state)
-        elif params['model'] == 'superinfo':
-            state = torch.load('/data/renhong/mol-hrh/saved/supervised_infomax.pth')
-            self.model.gnn.load_state_dict(state)
-        elif params['model'] == 'supermasking':
-            state = torch.load('/data/renhong/mol-hrh/saved/supervised_masking.pth')
+            state = torch.load('./saved/Mole-BERT.pth')
             self.model.gnn.load_state_dict(state)
         elif params['model'] == 'supervised':
-            state = torch.load('/data/renhong/mol-hrh/saved/supervised.pth')
+            state = torch.load('./saved/supervised.pth')
             self.model.gnn.load_state_dict(state)
         else:
             raise NotImplementedError
@@ -163,6 +151,7 @@ class GNN_Aux(nn.Module):
         self.params = params
         self.top_record = []
         if params['model'] != None:
+            self.num = params['num']
             self.pretrain()
         print("Done!")
 
@@ -170,7 +159,7 @@ class GNN_Aux(nn.Module):
         self.scaffold_idx = 0
         records = pkl.load(
             open(
-                f'/data/renhong/mol-hrh/records/records_{self.model_type}_ring/scaffold_{self.scaffold_idx}.pkl',
+                f'./records/records_{self.model_type}_ring/scaffold_{self.scaffold_idx}.pkl',
                 'rb'))
         scaffold_representations, scaffold_sizes, motif_representations, motif_sizes, merged_representations, labels, labels_ground = self.get_representations_v1(
             records)
@@ -222,7 +211,7 @@ class GNN_Aux(nn.Module):
                 scaffold_sizes + motif_sizes)
         score = F.cosine_similarity(estimated_rep, merged_rep)
         sorted_indexes = sorted(enumerate(score), key=lambda x: x[1], reverse=True)
-        top_mol = [index for index, _ in sorted_indexes[:100]]
+        top_mol = [index for index, _ in sorted_indexes[:self.num]]
         top_records = [[0, 0, records[i].potential_subgraph_mg.mol] for i in top_mol]
         self.top_record = top_records
 
@@ -270,25 +259,10 @@ class GNN_Aux(nn.Module):
                 score = F.cosine_similarity(estimated_representations, merged_representations)
                 alpha_list.append(alpha.detach().cpu().numpy())
                 score_list.append(score.detach().cpu().numpy())
-            # if score_list[0] < 0:
-            #     scores.append(-1)
-            #     continue
             label = calculate_extraction(record, self.params['scaffold_idx'])
             # combination
             if self.reward_type == 'score':
-                result = np.sum(np.array(score_list).reshape(-1) * np.array(label))
-                scores.append(result)
-            elif self.reward_type == 'ori':
                 result = np.sum(np.array(score_list).reshape(-1))
-                scores.append(result)
-            elif self.reward_type == 'ff':
-                if label[1] == 1:
-                    print(Chem.MolToSmiles(record[1][0]))
-                scores.append(label[1])
-            elif self.reward_type == 'aux':
-                result = 1
-                for k in range(len(label)):
-                    result = result * label[k]
                 scores.append(result)
         return np.array(scores)
 

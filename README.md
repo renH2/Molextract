@@ -81,7 +81,6 @@ Most of the existing methods are not suitable for data extraction in the context
 │       ├── opt.test.logP-SA
 │       ├── pretrained_models
 │       │   ├── GNN_aux.py
-│       │   ├── GNN_auxv1.py
 │       │   ├── GNN_simple.py
 │       │   ├── __init__.py
 │       │   ├── aux_saved

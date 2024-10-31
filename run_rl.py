@@ -55,6 +55,7 @@ def train(args, seed, writer=None):
                   'reward': args.reward,
                   'pretrain': args.pretrain,
                   'device': device,
+                  'num':args.K,
                   'model_name': f'reg_stre_10.0/scaffold_{args.scaffold_idx}.pth'}
     env.init(docking_config=args.docking_config, params=params_env, ratios=args.ratios,
              reward_step_total=args.reward_step_total, is_normalize=args.normalize_adj,
@@ -63,7 +64,7 @@ def train(args, seed, writer=None):
     env.seed(workerseed)
 
     SAC = sac(writer, args, env, actor_critic=GCNActorCritic, ac_kwargs=dict(), seed=seed,
-              steps_per_epoch=128, epochs=args.epochn, replay_size=int(1e6), beta=0.99,
+              steps_per_epoch=64, epochs=args.epochn, replay_size=int(1e6), beta=0.99,
               polyak=0.995, lr=args.init_lr, alpha=args.init_alpha, batch_size=args.batch_size,
               start_steps=args.start_steps, update_after=args.update_after, update_every=args.update_every,
               update_freq=args.update_freq,expert_every=5, num_test_episodes=8, max_ep_len=args.max_action,
@@ -147,7 +148,7 @@ def molecule_arg_parser():
     # action
     parser.add_argument('--is_conditional', type=int, default=0)
     # parser.add_argument('--conditional', type=str, default='low')
-    parser.add_argument('--max_action', type=int, default=2)
+    parser.add_argument('--max_action', type=int, default=1)
     parser.add_argument('--min_action', type=int, default=1)
 
     # SAC
@@ -173,7 +174,7 @@ def molecule_arg_parser():
     parser.add_argument("--scaffold_idx", type=int, default=0)
     parser.add_argument('--gnn', type=str, default='gcl')
     parser.add_argument('--reward', type=str, default='score')
-
+    parser.add_argument('--K', type=int, default=100)
     return parser
 
 

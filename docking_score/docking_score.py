@@ -4,11 +4,9 @@ from docking_score.docking_simple import DockingVina
 
 
 def docking_sc(smiles, target):
-    # with open(f'/data/renhong/mol-hrh/docking_score/config_{target}.yaml', 'r') as f:
     with open(f'./docking_score/config_{target}.yaml', 'r') as f:
         docking_config = yaml.load(f, Loader=yaml.FullLoader)
 
-    # docking_config['vina_program'] = '/data/renhong/mol-hrh/' + docking_config['vina_program']
     docking_config['vina_program'] = './' + docking_config['vina_program']
     predictor = DockingVina(docking_config)
 

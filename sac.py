@@ -532,13 +532,6 @@ class sac:
                 o_embeds = self.ac.embed([o])
                 o_g, o_n_emb, o_g_emb = o_embeds
 
-                # if t > start_steps:
-                #     ac, (ac_prob, log_ac_prob), (ac_first, ac_second, ac_third) = \
-                #         self.ac.pi(o_g_emb, o_n_emb, o_g, cands)
-                # else:
-                #     ac = self.env.sample_motif()[np.newaxis]
-                #     (ac_prob, log_ac_prob), (ac_first, ac_second, ac_third) = \
-                #         self.ac.pi.sample(ac[0], o_g_emb, o_n_emb, o_g, cands)
                 ac = self.env.sample_motif()[np.newaxis]
                 (ac_prob, log_ac_prob), (ac_first, ac_second, ac_third) = \
                     self.ac.pi.sample(ac[0], o_g_emb, o_n_emb, o_g, cands)
@@ -604,12 +597,10 @@ class sac:
                     self.replay_buffer.rew_store(r_batch, intr_rew, self.docking_every)
                     for i in range(n_smi):
                         if ext_rew[i] > 0.001:
-                            self.bank.append([ext_rew[i], intr_rew[i], self.env.record_list[i][1][0]])
+                            self.bank.append([ext_rew[i], intr_rew[i], self.env.record_list[i][-1][0]])
                     self.env.reset_batch()
 
-            # if t >= update_after and t % self.update_every == 0:
             if t >= update_after and t % 200 == 0:
-                # for j in tqdm(range(self.update_every)):
                 for j in tqdm(range(10)):
                     t_update = time.time()
                     batch = self.replay_buffer.sample_batch(self.device, self.t, self.batch_size)
@@ -654,7 +645,7 @@ def calculate_extraction(records, scaffold_idx):
     if len(records) == 0:
         return 0, 0, 0
     scaffold_smi = SCAFFOLD_VOCAB[scaffold_idx]
-    core2id = pkl.load(open(r'/data/renhong/mol-attack/data_preprocessing/zinc/core2mol_bank/core2id.pkl', 'rb'))
+    core2id = pkl.load(open(r'./data_preprocessing/zinc/core2mol_bank/core2id.pkl', 'rb'))
     mol_bank_id = core2id[Chem.MolToSmiles(Molecule_Graph(scaffold_smi).mol_core)]
 
     att = Chem.MolFromSmiles('*')
@@ -663,7 +654,7 @@ def calculate_extraction(records, scaffold_idx):
     freq_list = []
     ratio_list = []
     mol_bank_filtered = pkl.load(
-        open(f'/data/renhong/mol-attack/data_preprocessing/zinc/core2mol_bank/{mol_bank_id}.pkl', 'rb'))
+        open(f'./data_preprocessing/zinc/core2mol_bank/{mol_bank_id}.pkl', 'rb'))
 
     for i in range(len(records)):
         mg = records[i][2]
